@@ -1,0 +1,19 @@
+# Ignorar el archivo .env que contiene las credenciales sensibles
+.env
+
+# Otros archivos y directorios que puedes querer ignorar
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorar entornos virtuales
+venv/
+env/
+
+# Archivos de logs
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
