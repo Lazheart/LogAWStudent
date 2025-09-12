@@ -3,7 +3,8 @@ import time
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # -------------------------------
 # Cargar variables del entorno
@@ -14,14 +15,18 @@ PASSWORD = os.getenv("PASSWORD")
 LAB_URL = os.getenv("LAB_URL")
 
 # -------------------------------
-# Configurar Selenium (modo headless para que no abra ventana)
+# Configurar Selenium (headless para que no abra ventana)
 # -------------------------------
 options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")   # si quieres ver el navegador, comenta esta línea
+options.add_argument("--headless=new")   # quita esta línea si quieres ver el navegador
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 
-driver = webdriver.Chrome(options=options)
+# WebDriver con webdriver-manager (se baja el driver correcto)
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()), 
+    options=options
+)
 
 try:
     # 1. Ir al login de AWS Academy
@@ -34,14 +39,14 @@ try:
     driver.find_element(By.CLASS_NAME, "Button--login").click()
     time.sleep(5)
 
-    # 3. Ir al laboratorio (LAB_URL desde .env)
+    # 3. Ir al laboratorio
     driver.get(LAB_URL)
     time.sleep(5)
 
     # 4. Dar click en "Start Lab"
     start_lab = driver.find_element(By.ID, "launchclabsbtn")
     start_lab.click()
-    time.sleep(10)  # esperar que redireccione a la consola AWS
+    time.sleep(10)  # esperar redirección a la consola AWS
 
     # 5. Guardar la URL actual (consola AWS)
     aws_console_url = driver.current_url
@@ -52,4 +57,3 @@ except Exception as e:
 
 finally:
     driver.quit()
-
