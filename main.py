@@ -1,5 +1,4 @@
 import os
-import time
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -20,7 +19,7 @@ LAB_URL = os.getenv("LAB_URL")
 # Configurar Selenium
 # -------------------------------
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless=new")   # comenta para ver navegador
+options.add_argument("--headless=new")   # comenta para ver en el navegador
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 
@@ -29,34 +28,42 @@ driver = webdriver.Chrome(
     options=options
 )
 
+# -------------------------------
+# Función para logs bonitos
+# -------------------------------
+def log(msg, status="info"):
+    icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
+    print(f"{icons.get(status,'ℹ️')} {msg}")
+
 try:
-    # 1. Login
-    driver.get("https://awsacademy.instructure.com/login/canvas")
-    time.sleep(3)
-    driver.find_element(By.ID, "pseudonym_session_unique_id").send_keys(EMAIL)
-    driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
-    driver.find_element(By.CLASS_NAME, "Button--login").click()
-    time.sleep(2)
-    print("✅ Login correcto")
-
-    # 2. Ir al lab
-    driver.get(LAB_URL)
-    time.sleep(3)
-    print("✅ Página del lab cargada")
-
     wait = WebDriverWait(driver, 20)
 
-    # 3. Intentar encontrar el botón en el DOM principal
+    # 1. Login
+    log("Abriendo página de login...", "wait")
+    driver.get("https://awsacademy.instructure.com/login/canvas")
+
+    log("Ingresando credenciales...", "wait")
+    wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL)
+    driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
+    driver.find_element(By.CLASS_NAME, "Button--login").click()
+    log("Login exitoso", "ok")
+
+    # 2. Ir al lab
+    log("Entrando al laboratorio...", "wait")
+    driver.get(LAB_URL)
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+    log("Página del lab cargada", "ok")
+
+    # 3. Intentar encontrar el botón en DOM principal
+    
     try:
         start_lab = wait.until(EC.presence_of_element_located((By.ID, "launchclabsbtn")))
         driver.execute_script("arguments[0].click();", start_lab)
-        print("✅ Botón Start Lab encontrado en DOM principal")
+        log("Botón Start Lab encontrado en DOM principal", "ok")
     except:
-        print("🔎 No está en el DOM principal, probando iframes...")
-
-        # 4. Listar todos los iframes
+        log("Botón no visible en DOM principal, buscando en iframes...", "info")
         iframes = driver.find_elements(By.TAG_NAME, "iframe")
-        print(f"Encontrados {len(iframes)} iframes")
+        log(f"Encontrados {len(iframes)} iframes", "info")
 
         clicked = False
         for idx, iframe in enumerate(iframes):
@@ -67,24 +74,24 @@ try:
                     EC.presence_of_element_located((By.ID, "launchclabsbtn"))
                 )
                 driver.execute_script("arguments[0].click();", start_lab)
-                print(f"✅ Botón Start Lab encontrado en iframe {idx}")
+                log(f"Start Lab encontrado en iframe {idx}", "ok")
                 clicked = True
                 break
             except:
                 continue
-
         driver.switch_to.default_content()
         if not clicked:
-            raise Exception("❌ No se encontró el botón Start Lab en ningún iframe")
+            raise Exception("No se encontró el botón Start Lab en ningún iframe")
 
-    # 5. Esperar la redirección a la consola AWS
-    time.sleep(10)
+    # 4. Esperar redirección a la consola AWS
+    log("Esperando redirección a la consola AWS...", "wait")
+    wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url)
+
     aws_console_url = driver.current_url
-    print("🌍 Consola AWS lista en:", aws_console_url)
+    log(f"Consola AWS lista en: {aws_console_url}", "done")
 
 except Exception as e:
-    print("❌ Error:", e)
+    log(f"Error: {e}", "error")
 
 finally:
     driver.quit()
-
