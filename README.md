@@ -1,64 +1,99 @@
+
+
 # LogAWStudent
 
-Este proyecto automatiza el inicio de sesión en AWS Academy y el lanzamiento de un laboratorio a través de Selenium y Python. Es útil para estudiantes de AWS Academy que necesitan realizar este proceso repetidamente, ahorrando tiempo y esfuerzo.
+Este proyecto automatiza el inicio de sesión en **AWS Academy** y el lanzamiento de un laboratorio a través de **Selenium y Python**.  
+Es útil para estudiantes de AWS Academy que necesitan realizar este proceso repetidamente, ahorrando tiempo y esfuerzo.
 
-## Descripción
+---
 
-`LogAWStudent` es un script de automatización desarrollado en Python que realiza las siguientes tareas:
+## 🚀 Descripción
+
+`LogAWStudent` realiza las siguientes tareas:
 
 1. Inicia sesión en el portal de AWS Academy utilizando las credenciales del usuario.
-2. Accede a la URL del laboratorio proporcionada.
-3. Hace clic en el botón para iniciar el laboratorio.
-4. Obtiene la URL de la consola de AWS después de redirigir a la página correspondiente.
+2. Accede a la URL del laboratorio definida en las variables de entorno.
+3. Hace clic en el botón **Start Lab** para lanzar el laboratorio.
+4. Obtiene y muestra en consola la URL de la consola de AWS.
 
-## Requisitos
+---
 
-Este proyecto utiliza Selenium para la automatización del navegador, junto con `python-dotenv` para manejar variables de entorno (como las credenciales de inicio de sesión) y `webdriver-manager` para gestionar automáticamente el controlador de Chrome.
+## 📦 Requisitos
 
-Para instalar los requisitos, ejecuta:
+Este proyecto utiliza:
 
-```bash
-pip install -r requirements.txt
-```
+- [Selenium](https://pypi.org/project/selenium/) → Automatización del navegador
+- [webdriver-manager](https://pypi.org/project/webdriver-manager/) → Descarga automática del controlador (Chrome/Firefox)
+- [python-dotenv](https://pypi.org/project/python-dotenv/) → Manejo de variables de entorno
 
-## Configuración
+---
 
-1. **Variables de Entorno**:
-   Crea un archivo `.env` en el directorio raíz del proyecto y agrega las siguientes variables:
+## ⚙️ Instalación
 
+1. **Clona el repositorio**:
+
+   ```bash
+   git clone https://github.com/usuario/lazheart-logawstudent.git
+   cd lazheart-logawstudent
+
+
+2. **Crea un entorno virtual** (recomendado):
+
+   ```bash
+   python -m venv env
+   source env/bin/activate      # Linux / Mac
+   env\Scripts\activate         # Windows
    ```
-   EMAIL=tu_correo@example.com
-   PASSWORD=tu_contraseña
-   LAB_URL=https://url_del_laboratorio
-   ```
 
-   Asegúrate de reemplazar `tu_correo@example.com`, `tu_contraseña` y `https://url_del_laboratorio` con tus datos reales.
-
-2. **Instalar Dependencias**:
-   Asegúrate de tener todas las dependencias necesarias instaladas ejecutando:
+3. **Instala dependencias**:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-## Uso
+---
 
-Para ejecutar el script, simplemente corre el archivo `main.py`:
+## 🔑 Configuración
+
+1. **Variables de entorno**
+
+   Cambia el nombre de `.env_example` a `.env`:
+   ``` terminal
+   mv [nombre_antiguo] [nombre_nuevo]
+   ```
+
+
+
+3. **Editar `.env`** con tus credenciales reales.
+
+   ```env
+   EMAIL=tu_correo@example.com
+   PASSWORD=tu_contraseña
+   LAB_URL=https://awsacademy.instructure.com/courses/.../modules/items/...
+   ```
+
+---
+
+## ▶️ Uso
+
+Ejecuta el script principal:
 
 ```bash
 python main.py
 ```
 
-El script abrirá el navegador de manera *headless* (sin interfaz gráfica), realizará el inicio de sesión en AWS Academy, y lanzará el laboratorio.
+### Notas:
 
-**Nota**: Si deseas ver el navegador mientras el script se ejecuta, puedes eliminar o comentar la línea:
+* Por defecto, el navegador se abre en **modo headless** (sin interfaz).
+* Si deseas ver el navegador durante la ejecución, comenta la línea en `main.py`:
 
 ```python
 options.add_argument("--headless=new")
 ```
 
-## Contribución
 
-Si tienes alguna sugerencia o mejora, no dudes en abrir un "issue" o hacer un "pull request".
+## 🤝 Contribución
+
+Si tienes sugerencias o mejoras, abre un *issue* o envía un *pull request*.
 
 
