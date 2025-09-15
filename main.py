@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.webdriver import WebDriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 # -------------------------------
@@ -20,14 +21,24 @@ LAB_URL = os.getenv("LAB_URL")
 # Configurar Selenium
 # -------------------------------
 options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")
+options.add_argument("--headless=new")  # Headless moderno
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-extensions")
+options.add_argument("--disable-gpu")
+options.add_argument("--disable-logging")
 
 driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()), 
+    service=Service(ChromeDriverManager().install()),
     options=options
 )
+
+# Bloquear imágenes y fuentes para acelerar
+def block_heavy_resources(driver: WebDriver):
+    driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": ["*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg","*.woff","*.woff2","*.ttf","*.css"]})
+    driver.execute_cdp_cmd("Network.enable", {})
+
+block_heavy_resources(driver)
 
 # -------------------------------
 # Logs y medición de tiempos
@@ -47,51 +58,40 @@ def measure_step(func, name, *args, **kwargs):
     return result
 
 # -------------------------------
-# Búsqueda optimizada del botón
+# Búsqueda rápida del botón
 # -------------------------------
 MAX_DEPTH = 5
-IFRAME_TIMEOUT = 2
+IFRAME_TIMEOUT = 1
 
 def find_and_click_start_lab_fast(driver, depth=0):
     if depth > MAX_DEPTH:
-        log(f"Alcanzado máximo nivel de profundidad {MAX_DEPTH}", "info", depth)
         return False
 
-    start_buttons = driver.find_elements(By.ID, "launchclabsbtn")
-    if start_buttons:
-        driver.execute_script("arguments[0].click();", start_buttons[0])
-        log(f"Botón Start Lab encontrado y clickeado en nivel {depth}", "ok", depth)
+    try:
+        # Intento directo
+        button = WebDriverWait(driver, IFRAME_TIMEOUT).until(
+            EC.element_to_be_clickable((By.ID, "launchclabsbtn"))
+        )
+        button.click()
+        log(f"Botón Start Lab clickeado en nivel {depth}", "ok", depth)
         return True
+    except:
+        pass
 
     iframes = driver.find_elements(By.TAG_NAME, "iframe")
-    log(f"Buscando en {len(iframes)} iframes (nivel {depth})...", "info", depth)
-    
     for idx, iframe in enumerate(iframes):
         driver.switch_to.frame(iframe)
-        found = False
-        try:
-            found = WebDriverWait(driver, IFRAME_TIMEOUT).until(
-                lambda d: d.find_elements(By.ID, "launchclabsbtn")
-            )
-            if found:
-                driver.execute_script("arguments[0].click();", found[0])
-                log(f"Botón Start Lab encontrado y clickeado en iframe {idx} nivel {depth+1}", "ok", depth+1)
-                driver.switch_to.parent_frame()
-                return True
-        except:
-            pass
-        if not found:
-            found = find_and_click_start_lab_fast(driver, depth+1)
-            driver.switch_to.parent_frame()
-            if found:
-                return True
+        found = find_and_click_start_lab_fast(driver, depth+1)
+        driver.switch_to.parent_frame()
+        if found:
+            return True
     return False
 
 # -------------------------------
 # Script principal
 # -------------------------------
 try:
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 15)
 
     log("Abriendo página de login...", "wait")
     measure_step(driver.get, "LoginPage GET", "https://awsacademy.instructure.com/login/canvas")
