@@ -44,21 +44,11 @@ def block_heavy_resources(driver: WebDriver):
 block_heavy_resources(driver)
 
 # -------------------------------
-# Logs y medición de tiempos
+# Logs
 # -------------------------------
-timing_log = {}
-
 def log(msg, status="info"):
     icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
     print(f"{icons.get(status,'ℹ️')} {msg}")
-
-def measure_step(func, name, *args, **kwargs):
-    start = time.time()
-    result = func(*args, **kwargs)
-    end = time.time()
-    timing_log[name] = end - start
-    log(f"Tiempo de '{name}': {end - start:.2f}s", "info")
-    return result
 
 # -------------------------------
 # Click Start Lab con JS puro
@@ -89,35 +79,28 @@ try:
     wait = WebDriverWait(driver, 15)
 
     log("Abriendo página de login...", "wait")
-    measure_step(driver.get, "LoginPage GET", "https://awsacademy.instructure.com/login/canvas")
+    driver.get("https://awsacademy.instructure.com/login/canvas")
 
     log("Ingresando credenciales...", "wait")
-    measure_step(lambda: wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL), "Ingresar email")
-    measure_step(lambda: driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD), "Ingresar password")
-    measure_step(lambda: driver.find_element(By.CLASS_NAME, "Button--login").click(), "Click login")
+    wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL)
+    driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
+    driver.find_element(By.CLASS_NAME, "Button--login").click()
     log("Login exitoso", "ok")
 
     log("Entrando al laboratorio...", "wait")
-    measure_step(driver.get, "LabPage GET", LAB_URL)
-    measure_step(lambda: wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe"))), "Esperar iframe principal")
+    driver.get(LAB_URL)
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
     log("Página del lab cargada", "ok")
 
     log("Click Start Lab usando JS puro...", "wait")
-    measure_step(click_start_lab_js, "FindAndClick Start Lab", driver)
+    click_start_lab_js(driver)
     log("Botón Start Lab clickeado", "ok")
 
     log("Esperando redirección a la consola AWS...", "wait")
-    measure_step(lambda: wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url), "Esperar redirección AWS")
+    wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url)
 
     aws_console_url = driver.current_url
     log(f"Consola AWS lista en: {aws_console_url}", "done")
-
-    # -------------------------------
-    # Informe de tiempos
-    # -------------------------------
-    log("\n📊 Informe de tiempos por paso:", "done")
-    for step, t in timing_log.items():
-        log(f"{step}: {t:.2f}s", "info")
 
 except Exception as e:
     log(f"Error: {e}", "error")
