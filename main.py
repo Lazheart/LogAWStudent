@@ -1,3 +1,4 @@
+import time
 import os
 from dotenv import load_dotenv
 from selenium import webdriver
