@@ -21,11 +21,11 @@ LAB_URL = os.getenv("LAB_URL")
 # Configurar Selenium
 # -------------------------------
 options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")  # Headless moderno
+options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--disable-extensions")
 options.add_argument("--disable-gpu")
+options.add_argument("--disable-extensions")
 options.add_argument("--disable-logging")
 
 driver = webdriver.Chrome(
@@ -33,9 +33,12 @@ driver = webdriver.Chrome(
     options=options
 )
 
-# Bloquear imágenes y fuentes para acelerar
+# Bloquear imágenes, CSS y fuentes pesadas
 def block_heavy_resources(driver: WebDriver):
-    driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": ["*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg","*.woff","*.woff2","*.ttf","*.css"]})
+    driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [
+        "*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg",
+        "*.woff","*.woff2","*.ttf","*.css"
+    ]})
     driver.execute_cdp_cmd("Network.enable", {})
 
 block_heavy_resources(driver)
@@ -45,9 +48,9 @@ block_heavy_resources(driver)
 # -------------------------------
 timing_log = {}
 
-def log(msg, status="info", depth=0):
+def log(msg, status="info"):
     icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
-    print(f"{'  '*depth}{icons.get(status,'ℹ️')} {msg}")
+    print(f"{icons.get(status,'ℹ️')} {msg}")
 
 def measure_step(func, name, *args, **kwargs):
     start = time.time()
@@ -58,34 +61,26 @@ def measure_step(func, name, *args, **kwargs):
     return result
 
 # -------------------------------
-# Búsqueda rápida del botón
+# Click Start Lab con JS puro
 # -------------------------------
-MAX_DEPTH = 5
-IFRAME_TIMEOUT = 1
-
-def find_and_click_start_lab_fast(driver, depth=0):
-    if depth > MAX_DEPTH:
-        return False
-
-    try:
-        # Intento directo
-        button = WebDriverWait(driver, IFRAME_TIMEOUT).until(
-            EC.element_to_be_clickable((By.ID, "launchclabsbtn"))
-        )
-        button.click()
-        log(f"Botón Start Lab clickeado en nivel {depth}", "ok", depth)
-        return True
-    except:
-        pass
-
-    iframes = driver.find_elements(By.TAG_NAME, "iframe")
-    for idx, iframe in enumerate(iframes):
-        driver.switch_to.frame(iframe)
-        found = find_and_click_start_lab_fast(driver, depth+1)
-        driver.switch_to.parent_frame()
-        if found:
-            return True
-    return False
+def click_start_lab_js(driver: WebDriver):
+    script = """
+    function clickInFrames(frames){
+        for (let i=0;i<frames.length;i++){
+            let frame = frames[i];
+            try{
+                let btn = frame.contentDocument.getElementById('launchclabsbtn');
+                if(btn){ btn.click(); return true; }
+                let found = clickInFrames(frame.contentDocument.getElementsByTagName('iframe'));
+                if(found) return true;
+            }catch(e){}
+        }
+        return false;
+    }
+    let btn = document.getElementById('launchclabsbtn');
+    if(btn){ btn.click(); true; } else { clickInFrames(document.getElementsByTagName('iframe')); }
+    """
+    driver.execute_script(script)
 
 # -------------------------------
 # Script principal
@@ -107,8 +102,9 @@ try:
     measure_step(lambda: wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe"))), "Esperar iframe principal")
     log("Página del lab cargada", "ok")
 
-    if not measure_step(find_and_click_start_lab_fast, "FindAndClick Start Lab", driver):
-        raise Exception("No se encontró el botón Start Lab")
+    log("Click Start Lab usando JS puro...", "wait")
+    measure_step(click_start_lab_js, "FindAndClick Start Lab", driver)
+    log("Botón Start Lab clickeado", "ok")
 
     log("Esperando redirección a la consola AWS...", "wait")
     measure_step(lambda: wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url), "Esperar redirección AWS")
