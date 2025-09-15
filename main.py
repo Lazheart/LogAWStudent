@@ -1,5 +1,5 @@
-import time
 import os
+from getpass import getpass
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,9 +13,9 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Cargar variables del entorno
 # -------------------------------
 load_dotenv()
-EMAIL = os.getenv("EMAIL")
-PASSWORD = os.getenv("PASSWORD")
-LAB_URL = os.getenv("LAB_URL")
+EMAIL = os.getenv("EMAIL") or input("Ingrese su EMAIL: ")
+PASSWORD = os.getenv("PASSWORD") or getpass("Ingrese su PASSWORD: ")
+LAB_URL = os.getenv("LAB_URL") or input("Ingrese la URL del LAB: ")
 
 # -------------------------------
 # Configurar Selenium
@@ -92,7 +92,7 @@ try:
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
     log("Página del lab cargada", "ok")
 
-    log("Click Start Lab usando JS puro...", "wait")
+    log("Click Start Lab usando...", "wait")
     click_start_lab_js(driver)
     log("Botón Start Lab clickeado", "ok")
 
