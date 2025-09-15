@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 
+set -e  # detener si hay error
+
 # -------------------------------
-# Variables de entorno (opcional)
+# Preparar entorno virtual
+# -------------------------------
+if [ ! -d "env" ]; then
+  echo "🔧 Creando entorno virtual..."
+  python3 -m venv env
+fi
+
+# Activar entorno virtual
+source env/bin/activate
+
+# Instalar dependencias si no están
+echo "📦 Instalando dependencias..."
+pip install --quiet -r requirements.txt
+
+# -------------------------------
+# Variables de entorno
 # -------------------------------
 EMAIL="${EMAIL:-}"
 PASSWORD="${PASSWORD:-}"
@@ -21,5 +38,8 @@ if [ -z "$LAB_URL" ]; then
   read -p "Ingrese la URL del LAB: " LAB_URL
 fi
 
+# -------------------------------
 # Ejecutar script de Python
-python3 main.py
+# -------------------------------
+echo "🚀 Ejecutando LogAWStudent..."
+python main.py
