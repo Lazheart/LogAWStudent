@@ -13,9 +13,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Cargar variables del entorno
 # -------------------------------
 load_dotenv()
-EMAIL = os.getenv("EMAIL") or input("Ingrese su EMAIL: ")
-PASSWORD = os.getenv("PASSWORD") or getpass("Ingrese su PASSWORD: ")
-LAB_URL = os.getenv("LAB_URL") or input("Ingrese la URL del LAB: ")
+
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
+LAB_URL = os.getenv("LAB_URL")
+
+# Si no existen, pedirlas y guardarlas en .env
+if not EMAIL or not PASSWORD or not LAB_URL:
+    if not EMAIL:
+        EMAIL = input("Ingrese su EMAIL: ")
+    if not PASSWORD:
+        PASSWORD = getpass("Ingrese su PASSWORD: ")
+    if not LAB_URL:
+        LAB_URL = input("Ingrese la URL del LAB: ")
+
+    # Guardar en .env para futuras ejecuciones
+    with open(".env", "w") as f:
+        f.write(f"EMAIL={EMAIL}\n")
+        f.write(f"PASSWORD={PASSWORD}\n")
+        f.write(f"LAB_URL={LAB_URL}\n")
 
 # -------------------------------
 # Configurar Selenium
