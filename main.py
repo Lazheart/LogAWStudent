@@ -1,4 +1,5 @@
 import os
+import time
 from getpass import getpass
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -37,7 +38,7 @@ if not EMAIL or not PASSWORD or not LAB_URL:
 # Configurar Selenium
 # -------------------------------
 options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")
+options.add_argument("--headless=new")  # opcional
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
@@ -67,32 +68,38 @@ def log(msg, status="info"):
     print(f"{icons.get(status,'ℹ️')} {msg}")
 
 # -------------------------------
-# Click Start Lab con JS puro
+# Click Start Lab iterativo rápido
 # -------------------------------
-def click_start_lab_js(driver: WebDriver):
-    script = """
-    function clickInFrames(frames){
-        for (let i=0;i<frames.length;i++){
-            let frame = frames[i];
-            try{
-                let btn = frame.contentDocument.getElementById('launchclabsbtn');
-                if(btn){ btn.click(); return true; }
-                let found = clickInFrames(frame.contentDocument.getElementsByTagName('iframe'));
-                if(found) return true;
-            }catch(e){}
-        }
-        return false;
-    }
-    let btn = document.getElementById('launchclabsbtn');
-    if(btn){ btn.click(); true; } else { clickInFrames(document.getElementsByTagName('iframe')); }
-    """
-    driver.execute_script(script)
+def click_start_lab_fast(driver: WebDriver, timeout=20):
+    start = time.time()
+
+    while time.time() - start < timeout:
+        frames = driver.find_elements(By.TAG_NAME, "iframe")
+
+        for frame in frames:
+            try:
+                driver.switch_to.frame(frame)
+                btns = driver.find_elements(By.ID, "launchclabsbtn")
+                if btns:
+                    btn = btns[0]
+                    if btn.is_displayed() and btn.is_enabled():
+                        btn.click()
+                        driver.switch_to.default_content()
+                        return True
+            except:
+                pass
+            finally:
+                driver.switch_to.default_content()
+        
+        time.sleep(1)  # reintenta cada 1s
+
+    return False
 
 # -------------------------------
 # Script principal
 # -------------------------------
 try:
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, 10)
 
     log("Abriendo página de login...", "wait")
     driver.get("https://awsacademy.instructure.com/login/canvas")
@@ -108,9 +115,11 @@ try:
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
     log("Página del lab cargada", "ok")
 
-    log("Click Start Lab usando...", "wait")
-    click_start_lab_js(driver)
-    log("Botón Start Lab clickeado", "ok")
+    log("Buscando botón Start Lab...", "wait")
+    if click_start_lab_fast(driver, timeout=20):  # 20s de espera máxima
+        log("Botón Start Lab clickeado", "ok")
+    else:
+        log("No se encontró el botón Start Lab", "error")
 
     log("Esperando redirección a la consola AWS...", "wait")
     wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url)
@@ -123,3 +132,4 @@ except Exception as e:
 
 finally:
     driver.quit()
+
