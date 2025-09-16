@@ -28,16 +28,16 @@ Necesitas tener instalado **Python 3.8+** y **Google Chrome**.
 
 ---
 
-## ⚙️ Instalación y uso
+## ⚙️ Instalación
 
-### 🔹 Paso 1: Clonar el repositorio
+### Paso 1: Clonar el repositorio
 
 ```bash
-git clone https://github.com/usuario/lazheart-logawstudent.git
-cd lazheart-logawstudent
+git clone https://github.com/Lazheart/LogAWStudent.git
+cd LogAWStudent
 ````
 
-### 🔹 Paso 2: Configurar las variables de entorno (opcional)
+### Paso 2: Configurar las variables de entorno (opcional)
 
 Si quieres evitar ingresar credenciales manualmente cada vez:
 
@@ -55,22 +55,66 @@ Si quieres evitar ingresar credenciales manualmente cada vez:
    LAB_URL=https://awsacademy.instructure.com/courses/.../modules/items/...
    ```
 
+👉 **Nota:** Si no creas el archivo `.env`, la primera vez que ejecutes el programa se te pedirán los datos por consola y automáticamente se guardarán en `.env` para usos futuros.
+
 ---
 
-### 🔹 Paso 3: Ejecutar el script
+## ▶️ Uso
 
-El script `loginUpAWS.sh` se encarga de todo:
+Tienes dos formas de ejecutar el programa:
+
+### 🔹 Opción 1 (recomendada): Usando `loginUpAWS.sh`
+
+Este script se encarga de:
 
 * Crear un entorno virtual (si no existe).
 * Instalar dependencias (`requirements.txt`).
 * Pedir credenciales (si no hay `.env`).
 * Ejecutar el bot de Selenium.
 
-Ejecuta:
-
 ```bash
 chmod +x loginUpAWS.sh   # (solo la primera vez)
 ./loginUpAWS.sh
+```
+
+---
+
+### 🔹 Opción 2: Usando Python directamente
+
+Si ya tienes un entorno configurado y dependencias instaladas, puedes correr el programa sin el `.sh`:
+
+```bash
+python -m main
+```
+
+---
+
+## ⚙️ Configuración de alias
+
+Para no tener que entrar cada vez al directorio, puedes crear un alias en tu shell.
+
+1. Edita tu archivo de configuración (`~/.zshrc` o `~/.bashrc`):
+
+   ```bash
+   nano ~/.zshrc
+   ```
+
+2. Agrega la siguiente línea:
+
+   ```bash
+   alias startAWS="$HOME/LogAWStudent/loginUpAWS.sh"
+   ```
+
+3. Recarga la configuración:
+
+   ```bash
+   source ~/.zshrc
+   ```
+
+Ahora puedes ejecutar el programa desde cualquier lugar con:
+
+```bash
+startAWS
 ```
 
 ---
@@ -89,3 +133,4 @@ options.add_argument("--headless=new")
 ## 🤝 Contribución
 
 Si tienes sugerencias o mejoras, abre un *issue* o envía un *pull request*.
+
