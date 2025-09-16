@@ -121,12 +121,6 @@ try:
     else:
         log("No se encontró el botón Start Lab", "error")
 
-    log("Esperando redirección a la consola AWS...", "wait")
-    wait.until(lambda d: "console.aws.amazon.com" in d.current_url or "awsacademy.instructure.com" in d.current_url)
-
-    aws_console_url = driver.current_url
-    log(f"Consola AWS lista en: {aws_console_url}", "done")
-
 except Exception as e:
     log(f"Error: {e}", "error")
 
