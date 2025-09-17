@@ -72,7 +72,7 @@ def log(msg, status="info"):
 # -------------------------------
 # Verificar estado del laboratorio
 # -------------------------------
-def check_lab_status(driver: WebDriver, timeout=30):
+def check_lab_status(driver: WebDriver, timeout=20):
     """Consulta el estado del laboratorio leyendo #vmstatus dentro de #vmBtn si existe."""
     start = time.time()
 
@@ -122,7 +122,7 @@ def check_lab_status(driver: WebDriver, timeout=30):
 # -------------------------------
 # Click Start Lab
 # -------------------------------
-def click_start_lab_fast(driver: WebDriver, timeout=20):
+def click_start_lab_fast(driver: WebDriver, timeout=15):
     start = time.time()
     while time.time() - start < timeout:
         frames = driver.find_elements(By.TAG_NAME, "iframe")
@@ -164,18 +164,42 @@ try:
     log("Página del lab cargada", "ok")
 
     log("Verificando estado del laboratorio...", "wait")
-    status = check_lab_status(driver, timeout=20)
+    status = check_lab_status(driver, timeout=15)
 
     if not status:
         log("No se pudo detectar el estado del laboratorio", "error")
     elif "Ready" in status:
-        log("✅ Laboratorio ya está iniciado y listo", "ok")
+        log("Laboratorio ya está iniciado y listo", "ok")
     elif "Initializing" in status:
-        log("⏳ Laboratorio se está iniciando, espere unos minutos...", "wait")
+        log(" Laboratorio se está iniciando, esperando a que esté listo...", "wait")
+        # Espera extendida hasta 1 minuto
+        max_wait = 60
+        start_wait = time.time()
+        while time.time() - start_wait < max_wait:
+            status = check_lab_status(driver, timeout=10)
+            if status and "Ready" in status:
+                log(" Laboratorio ya está iniciado y listo", "ok")
+                break
+            log("⏳ Sigue iniciando...", "wait")
+            time.sleep(5)
+        else:
+            log("❌ El laboratorio no pasó a 'Ready' en el tiempo esperado", "error")
     elif "Terminated" in status:
         log("⚠️ Laboratorio detenido, intentando iniciarlo...", "wait")
-        if click_start_lab_fast(driver, timeout=20):
+        if click_start_lab_fast(driver, timeout=15):
             log("🚀 Botón Start Lab clickeado", "ok")
+            # Después de clic, esperar a que pase a Ready
+            max_wait = 300
+            start_wait = time.time()
+            while time.time() - start_wait < max_wait:
+                status = check_lab_status(driver, timeout=10)
+                if status and "Ready" in status:
+                    log(" Laboratorio ya está iniciado y listo", "ok")
+                    break
+                log("⏳ Esperando que el laboratorio se inicie...", "wait")
+                time.sleep(5)
+            else:
+                log("❌ El laboratorio no se inició en el tiempo esperado", "error")
         else:
             log("❌ No se pudo iniciar el laboratorio", "error")
     else:
