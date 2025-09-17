@@ -28,7 +28,6 @@ if not EMAIL or not PASSWORD or not LAB_URL:
     if not LAB_URL:
         LAB_URL = input("Ingrese la URL del LAB: ")
 
-    # Guardar en .env para futuras ejecuciones
     with open(".env", "w") as f:
         f.write(f"EMAIL={EMAIL}\n")
         f.write(f"PASSWORD={PASSWORD}\n")
@@ -50,13 +49,16 @@ driver = webdriver.Chrome(
     options=options
 )
 
-# Bloquear imágenes, CSS y fuentes pesadas
 def block_heavy_resources(driver: WebDriver):
-    driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [
-        "*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg",
-        "*.woff","*.woff2","*.ttf","*.css"
-    ]})
-    driver.execute_cdp_cmd("Network.enable", {})
+    """Bloquea recursos pesados (imágenes, fuentes, CSS)."""
+    try:
+        driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [
+            "*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg",
+            "*.woff","*.woff2","*.ttf","*.css"
+        ]})
+        driver.execute_cdp_cmd("Network.enable", {})
+    except Exception:
+        pass
 
 block_heavy_resources(driver)
 
@@ -68,14 +70,62 @@ def log(msg, status="info"):
     print(f"{icons.get(status,'ℹ️')} {msg}")
 
 # -------------------------------
-# Click Start Lab iterativo rápido
+# Verificar estado del laboratorio
 # -------------------------------
-def click_start_lab_fast(driver: WebDriver, timeout=20):
+def check_lab_status(driver: WebDriver, timeout=30):
+    """Consulta el estado del laboratorio leyendo #vmstatus dentro de #vmBtn si existe."""
     start = time.time()
 
     while time.time() - start < timeout:
         frames = driver.find_elements(By.TAG_NAME, "iframe")
 
+        for frame in frames:
+            try:
+                driver.switch_to.frame(frame)
+
+                # Caso 1: el botón de AWS existe
+                try:
+                    vm_btn = driver.find_element(By.ID, "vmBtn")
+                    vm_status = vm_btn.find_element(By.ID, "vmstatus")
+                    status_text = (
+                        vm_status.get_attribute("aria-label")
+                        or vm_status.get_attribute("title")
+                        or vm_status.get_attribute("class")
+                    )
+                    driver.switch_to.default_content()
+                    return status_text.strip()
+                except:
+                    pass
+
+                # Caso 2: buscar vmstatus directamente
+                try:
+                    vm_status = driver.find_element(By.ID, "vmstatus")
+                    status_text = (
+                        vm_status.get_attribute("aria-label")
+                        or vm_status.get_attribute("title")
+                        or vm_status.get_attribute("class")
+                    )
+                    driver.switch_to.default_content()
+                    return status_text.strip()
+                except:
+                    pass
+
+            except:
+                pass
+            finally:
+                driver.switch_to.default_content()
+
+        time.sleep(1)
+
+    return None
+
+# -------------------------------
+# Click Start Lab
+# -------------------------------
+def click_start_lab_fast(driver: WebDriver, timeout=20):
+    start = time.time()
+    while time.time() - start < timeout:
+        frames = driver.find_elements(By.TAG_NAME, "iframe")
         for frame in frames:
             try:
                 driver.switch_to.frame(frame)
@@ -90,9 +140,7 @@ def click_start_lab_fast(driver: WebDriver, timeout=20):
                 pass
             finally:
                 driver.switch_to.default_content()
-        
-        time.sleep(1)  # reintenta cada 1s
-
+        time.sleep(1)
     return False
 
 # -------------------------------
@@ -115,15 +163,26 @@ try:
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
     log("Página del lab cargada", "ok")
 
-    log("Buscando botón Start Lab...", "wait")
-    if click_start_lab_fast(driver, timeout=20):  # 20s de espera máxima
-        log("Botón Start Lab clickeado", "ok")
+    log("Verificando estado del laboratorio...", "wait")
+    status = check_lab_status(driver, timeout=20)
+
+    if not status:
+        log("No se pudo detectar el estado del laboratorio", "error")
+    elif "Ready" in status:
+        log("✅ Laboratorio ya está iniciado y listo", "ok")
+    elif "Initializing" in status:
+        log("⏳ Laboratorio se está iniciando, espere unos minutos...", "wait")
+    elif "Terminated" in status:
+        log("⚠️ Laboratorio detenido, intentando iniciarlo...", "wait")
+        if click_start_lab_fast(driver, timeout=20):
+            log("🚀 Botón Start Lab clickeado", "ok")
+        else:
+            log("❌ No se pudo iniciar el laboratorio", "error")
     else:
-        log("No se encontró el botón Start Lab", "error")
+        log(f"Estado desconocido detectado: {status}", "info")
 
 except Exception as e:
     log(f"Error: {e}", "error")
 
 finally:
     driver.quit()
-
