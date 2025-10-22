@@ -10,44 +10,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from webdriver_manager.chrome import ChromeDriverManager
 
-# -------------------------------
-# Cargar variables del entorno
-# -------------------------------
-load_dotenv()
 
-EMAIL = os.getenv("EMAIL")
-PASSWORD = os.getenv("PASSWORD")
-LAB_URL = os.getenv("LAB_URL")
+def log(msg, status="info"):
+    icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
+    print(f"{icons.get(status,'ℹ️')} {msg}")
 
-# Si no existen, pedirlas y guardarlas en .env
-if not EMAIL or not PASSWORD or not LAB_URL:
-    if not EMAIL:
-        EMAIL = input("Ingrese su EMAIL: ")
-    if not PASSWORD:
-        PASSWORD = getpass("Ingrese su PASSWORD: ")
-    if not LAB_URL:
-        LAB_URL = input("Ingrese la URL del LAB: ")
-
-    with open(".env", "w") as f:
-        f.write(f"EMAIL={EMAIL}\n")
-        f.write(f"PASSWORD={PASSWORD}\n")
-        f.write(f"LAB_URL={LAB_URL}\n")
-
-# -------------------------------
-# Configurar Selenium
-# -------------------------------
-options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")  # opcional
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--disable-gpu")
-options.add_argument("--disable-extensions")
-options.add_argument("--disable-logging")
-
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
 
 def block_heavy_resources(driver: WebDriver):
     """Bloquea recursos pesados (imágenes, fuentes, CSS)."""
@@ -60,18 +27,7 @@ def block_heavy_resources(driver: WebDriver):
     except Exception:
         pass
 
-block_heavy_resources(driver)
 
-# -------------------------------
-# Logs
-# -------------------------------
-def log(msg, status="info"):
-    icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
-    print(f"{icons.get(status,'ℹ️')} {msg}")
-
-# -------------------------------
-# Verificar estado del laboratorio
-# -------------------------------
 def check_lab_status(driver: WebDriver, timeout=20):
     """Consulta el estado del laboratorio leyendo #vmstatus dentro de #vmBtn si existe."""
     start = time.time()
@@ -119,10 +75,9 @@ def check_lab_status(driver: WebDriver, timeout=20):
 
     return None
 
-# -------------------------------
-# Click Start Lab
-# -------------------------------
+
 def click_start_lab_fast(driver: WebDriver, timeout=15):
+    """Hace clic rápido en el botón Start Lab si está disponible."""
     start = time.time()
     while time.time() - start < timeout:
         frames = driver.find_elements(By.TAG_NAME, "iframe")
@@ -143,70 +98,114 @@ def click_start_lab_fast(driver: WebDriver, timeout=15):
         time.sleep(1)
     return False
 
-# -------------------------------
-# Script principal
-# -------------------------------
-try:
-    wait = WebDriverWait(driver, 10)
 
-    log("Abriendo página de login...", "wait")
-    driver.get("https://awsacademy.instructure.com/login/canvas")
+def main():
+    # -------------------------------
+    # Cargar variables del entorno
+    # -------------------------------
+    load_dotenv()
 
-    log("Ingresando credenciales...", "wait")
-    wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL)
-    driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
-    driver.find_element(By.CLASS_NAME, "Button--login").click()
-    log("Login exitoso", "ok")
+    EMAIL = os.getenv("EMAIL")
+    PASSWORD = os.getenv("PASSWORD")
+    LAB_URL = os.getenv("LAB_URL")
 
-    log("Entrando al laboratorio...", "wait")
-    driver.get(LAB_URL)
-    wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
-    log("Página del lab cargada", "ok")
+    # Si no existen, pedirlas y guardarlas en .env
+    if not EMAIL or not PASSWORD or not LAB_URL:
+        if not EMAIL:
+            EMAIL = input("Ingrese su EMAIL: ")
+        if not PASSWORD:
+            PASSWORD = getpass("Ingrese su PASSWORD: ")
+        if not LAB_URL:
+            LAB_URL = input("Ingrese la URL del LAB: ")
 
-    log("Verificando estado del laboratorio...", "wait")
-    status = check_lab_status(driver, timeout=15)
+        with open(".env", "w") as f:
+            f.write(f"EMAIL={EMAIL}\n")
+            f.write(f"PASSWORD={PASSWORD}\n")
+            f.write(f"LAB_URL={LAB_URL}\n")
 
-    if not status:
-        log("No se pudo detectar el estado del laboratorio", "error")
-    elif "Ready" in status:
-        log("Laboratorio ya está iniciado y listo", "ok")
-    elif "Initializing" in status:
-        log(" Laboratorio se está iniciando, esperando a que esté listo...", "wait")
-        # Espera extendida hasta 1 minuto
-        max_wait = 60
-        start_wait = time.time()
-        while time.time() - start_wait < max_wait:
-            status = check_lab_status(driver, timeout=10)
-            if status and "Ready" in status:
-                log(" Laboratorio ya está iniciado y listo", "ok")
-                break
-            log("⏳ Sigue iniciando...", "wait")
-            time.sleep(5)
-        else:
-            log("❌ El laboratorio no pasó a 'Ready' en el tiempo esperado", "error")
-    elif "Terminated" in status:
-        log("⚠️ Laboratorio detenido, intentando iniciarlo...", "wait")
-        if click_start_lab_fast(driver, timeout=15):
-            log("🚀 Botón Start Lab clickeado", "ok")
-            # Después de clic, esperar a que pase a Ready
-            max_wait = 300
+    # -------------------------------
+    # Configurar Selenium
+    # -------------------------------
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless=new")  # opcional
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-logging")
+
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
+
+    block_heavy_resources(driver)
+
+    try:
+        wait = WebDriverWait(driver, 10)
+
+        log("Abriendo página de login...", "wait")
+        driver.get("https://awsacademy.instructure.com/login/canvas")
+
+        log("Ingresando credenciales...", "wait")
+        wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL)
+        driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
+        driver.find_element(By.CLASS_NAME, "Button--login").click()
+        log("Login exitoso", "ok")
+
+        log("Entrando al laboratorio...", "wait")
+        driver.get(LAB_URL)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        log("Página del lab cargada", "ok")
+
+        log("Verificando estado del laboratorio...", "wait")
+        status = check_lab_status(driver, timeout=15)
+
+        if not status:
+            log("No se pudo detectar el estado del laboratorio", "error")
+        elif "Ready" in status:
+            log("Laboratorio ya está iniciado y listo", "ok")
+        elif "Initializing" in status:
+            log(" Laboratorio se está iniciando, esperando a que esté listo...", "wait")
+            # Espera extendida hasta 1 minuto
+            max_wait = 60
             start_wait = time.time()
             while time.time() - start_wait < max_wait:
                 status = check_lab_status(driver, timeout=10)
                 if status and "Ready" in status:
                     log(" Laboratorio ya está iniciado y listo", "ok")
                     break
-                log("⏳ Esperando que el laboratorio se inicie...", "wait")
+                log("⏳ Sigue iniciando...", "wait")
                 time.sleep(5)
             else:
-                log("❌ El laboratorio no se inició en el tiempo esperado", "error")
+                log("❌ El laboratorio no pasó a 'Ready' en el tiempo esperado", "error")
+        elif "Terminated" in status:
+            log("⚠️ Laboratorio detenido, intentando iniciarlo...", "wait")
+            if click_start_lab_fast(driver, timeout=15):
+                log("🚀 Botón Start Lab clickeado", "ok")
+                # Después de clic, esperar a que pase a Ready
+                max_wait = 300
+                start_wait = time.time()
+                while time.time() - start_wait < max_wait:
+                    status = check_lab_status(driver, timeout=10)
+                    if status and "Ready" in status:
+                        log(" Laboratorio ya está iniciado y listo", "ok")
+                        break
+                    log("⏳ Esperando que el laboratorio se inicie...", "wait")
+                    time.sleep(5)
+                else:
+                    log("❌ El laboratorio no se inició en el tiempo esperado", "error")
+            else:
+                log("❌ No se pudo iniciar el laboratorio", "error")
         else:
-            log("❌ No se pudo iniciar el laboratorio", "error")
-    else:
-        log(f"Estado desconocido detectado: {status}", "info")
+            log(f"Estado desconocido detectado: {status}", "info")
 
-except Exception as e:
-    log(f"Error: {e}", "error")
+    except Exception as e:
+        log(f"Error: {e}", "error")
 
-finally:
-    driver.quit()
+    finally:
+        driver.quit()
+
+
+if __name__ == "__main__":
+    main()
