@@ -1,2 +1,0 @@
-[console_scripts]
-awstudent = logawstudent.cli:app
