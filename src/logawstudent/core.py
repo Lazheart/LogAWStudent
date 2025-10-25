@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from webdriver_manager.chrome import ChromeDriverManager
-from .utils import load_env
+from .utils import load_env, validate_credentials
 
 
 def log(msg, status="info"):
@@ -104,13 +104,14 @@ def launch_lab():
     Lanza el laboratorio automáticamente.
     Requiere que EMAIL, PASSWORD y LAB_URL estén configurados en .env.
     """
-    creds = load_env()
-    EMAIL = creds.get("EMAIL")
-    PASSWORD = creds.get("PASSWORD")
-    LAB_URL = creds.get("LAB_URL")
-
-    if not EMAIL or not PASSWORD or not LAB_URL:
-        log("Faltan credenciales o URL. Usa 'awstudent login' y 'awstudent url --set'", "error")
+    try:
+        creds = validate_credentials()
+        EMAIL = creds["EMAIL"]
+        PASSWORD = creds["PASSWORD"]
+        LAB_URL = creds["LAB_URL"]
+    except ValueError as e:
+        log(f"Error de credenciales: {e}", "error")
+        log("Usa 'awstudent login' y 'awstudent url --set' para configurar", "info")
         return
 
     # -------------------------------
@@ -141,7 +142,22 @@ def launch_lab():
         wait.until(EC.presence_of_element_located((By.ID, "pseudonym_session_unique_id"))).send_keys(EMAIL)
         driver.find_element(By.ID, "pseudonym_session_password").send_keys(PASSWORD)
         driver.find_element(By.CLASS_NAME, "Button--login").click()
-        log("Login exitoso", "ok")
+        
+        # Verificar si el login fue exitoso
+        try:
+            # Esperar a que aparezca el dashboard o algún elemento que indique login exitoso
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ic-DashboardCard")))
+            log("Login exitoso", "ok")
+        except:
+            # Si no aparece el dashboard, verificar si hay mensaje de error
+            try:
+                error_element = driver.find_element(By.CLASS_NAME, "error_message")
+                if error_element.is_displayed():
+                    log("Credenciales incorrectas. Verifica tu email y contraseña.", "error")
+                    return
+            except:
+                pass
+            log("No se pudo verificar el login. Continuando...", "info")
 
         log("Entrando al laboratorio...", "wait")
         driver.get(LAB_URL)
