@@ -110,7 +110,7 @@ def launch_lab():
     LAB_URL = creds.get("LAB_URL")
 
     if not EMAIL or not PASSWORD or not LAB_URL:
-        log("❌ Faltan credenciales o URL. Usa 'awstudent login' y 'awstudent url --set'", "error")
+        log("Faltan credenciales o URL. Usa 'awstudent login' y 'awstudent url --set'", "error")
         return
 
     # -------------------------------
@@ -157,24 +157,23 @@ def launch_lab():
             log("Laboratorio ya está iniciado y listo", "ok")
         elif "Initializing" in status:
             log(" Laboratorio se está iniciando, esperando a que esté listo...", "wait")
-            # Espera extendida hasta 1 minuto
-            max_wait = 60
+            # Espera extendida hasta 35
+            max_wait = 35
             start_wait = time.time()
             while time.time() - start_wait < max_wait:
                 status = check_lab_status(driver, timeout=10)
                 if status and "Ready" in status:
                     log(" Laboratorio ya está iniciado y listo", "ok")
                     break
-                log("⏳ Sigue iniciando...", "wait")
-                time.sleep(5)
+                log(" Sigue iniciando...", "wait")
             else:
-                log("❌ El laboratorio no pasó a 'Ready' en el tiempo esperado", "error")
+                log(" El laboratorio no pasó a 'Ready' en el tiempo esperado", "error")
         elif "Terminated" in status:
-            log("⚠️ Laboratorio detenido, intentando iniciarlo...", "wait")
+            log("Laboratorio detenido, intentando iniciarlo...", "wait")
             if click_start_lab_fast(driver, timeout=15):
                 log("🚀 Botón Start Lab clickeado", "ok")
                 # Después de clic, esperar a que pase a Ready
-                max_wait = 300
+                max_wait = 200
                 start_wait = time.time()
                 while time.time() - start_wait < max_wait:
                     status = check_lab_status(driver, timeout=10)
@@ -182,11 +181,10 @@ def launch_lab():
                         log(" Laboratorio ya está iniciado y listo", "ok")
                         break
                     log("⏳ Esperando que el laboratorio se inicie...", "wait")
-                    time.sleep(5)
                 else:
-                    log("❌ El laboratorio no se inició en el tiempo esperado", "error")
+                    log("El laboratorio no se inició en el tiempo esperado", "error")
             else:
-                log("❌ No se pudo iniciar el laboratorio", "error")
+                log("No se pudo iniciar el laboratorio", "error")
         else:
             log(f"Estado desconocido detectado: {status}", "info")
 
