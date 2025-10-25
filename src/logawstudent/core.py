@@ -1,7 +1,6 @@
+# src/logawstudent/core.py
 import os
 import time
-from getpass import getpass
-from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -9,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
 from webdriver_manager.chrome import ChromeDriverManager
+from .utils import load_env
 
 
 def log(msg, status="info"):
@@ -20,8 +20,8 @@ def block_heavy_resources(driver: WebDriver):
     """Bloquea recursos pesados (imágenes, fuentes, CSS)."""
     try:
         driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [
-            "*.png","*.jpg","*.jpeg","*.gif","*.webp","*.svg",
-            "*.woff","*.woff2","*.ttf","*.css"
+            "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.svg",
+            "*.woff", "*.woff2", "*.ttf", "*.css"
         ]})
         driver.execute_cdp_cmd("Network.enable", {})
     except Exception:
@@ -99,29 +99,19 @@ def click_start_lab_fast(driver: WebDriver, timeout=15):
     return False
 
 
-def main():
-    # -------------------------------
-    # Cargar variables del entorno
-    # -------------------------------
-    load_dotenv()
+def launch_lab():
+    """
+    Lanza el laboratorio automáticamente.
+    Requiere que EMAIL, PASSWORD y LAB_URL estén configurados en .env.
+    """
+    creds = load_env()
+    EMAIL = creds.get("EMAIL")
+    PASSWORD = creds.get("PASSWORD")
+    LAB_URL = creds.get("LAB_URL")
 
-    EMAIL = os.getenv("EMAIL")
-    PASSWORD = os.getenv("PASSWORD")
-    LAB_URL = os.getenv("LAB_URL")
-
-    # Si no existen, pedirlas y guardarlas en .env
     if not EMAIL or not PASSWORD or not LAB_URL:
-        if not EMAIL:
-            EMAIL = input("Ingrese su EMAIL: ")
-        if not PASSWORD:
-            PASSWORD = getpass("Ingrese su PASSWORD: ")
-        if not LAB_URL:
-            LAB_URL = input("Ingrese la URL del LAB: ")
-
-        with open(".env", "w") as f:
-            f.write(f"EMAIL={EMAIL}\n")
-            f.write(f"PASSWORD={PASSWORD}\n")
-            f.write(f"LAB_URL={LAB_URL}\n")
+        log("❌ Faltan credenciales o URL. Usa 'awstudent login' y 'awstudent url --set'", "error")
+        return
 
     # -------------------------------
     # Configurar Selenium
@@ -205,7 +195,3 @@ def main():
 
     finally:
         driver.quit()
-
-
-if __name__ == "__main__":
-    main()

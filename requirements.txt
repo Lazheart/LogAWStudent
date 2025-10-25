@@ -1,4 +1,4 @@
 selenium
 python-dotenv
 webdriver-manager
-
+typer[all]

@@ -19,5 +19,4 @@ dependencies = [
 ]
 
 [project.scripts]
-logawstudent = "logawstudent.__main__:main"
-
+awstudent = "logawstudent.cli:app"
