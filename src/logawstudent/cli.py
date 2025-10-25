@@ -80,13 +80,13 @@ def url(
         typer.echo("🧹 URL del laboratorio eliminada.")
     else:
         data = load_env()
-        current_url = data.get('LAB_URL', 'No configurada')
-        if current_url != 'No configurada':
+        current_url = data.get('LAB_URL')
+        if current_url and current_url != 'No configurada':
             # Mostrar solo parte de la URL por seguridad
             display_url = current_url[:30] + "..." if len(current_url) > 30 else current_url
             typer.echo(f"🔗 URL actual: {display_url}")
         else:
-            typer.echo(f"🔗 URL actual: {current_url}")
+            typer.echo(f"🔗 URL actual: No configurada")
 
 @app.command()
 def logout():

@@ -15,7 +15,8 @@ requires-python = ">=3.8"
 dependencies = [
   "selenium",
   "python-dotenv",
-  "webdriver-manager"
+  "webdriver-manager",
+  "typer"
 ]
 
 [project.scripts]
