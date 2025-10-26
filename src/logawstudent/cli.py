@@ -3,7 +3,11 @@ import typer
 from .utils import set_env, unset_env, load_env, clear_env, update_env, get_credentials_status
 from .core import launch_lab
 
-app = typer.Typer(help="CLI para automatizar login y labs de AWS Academy")
+app = typer.Typer(
+    help="CLI para automatizar login y labs de AWS Academy",
+    no_args_is_help=True,
+    add_completion=False
+)
 
 def show_credentials_status():
     """Muestra el estado de las credenciales."""
