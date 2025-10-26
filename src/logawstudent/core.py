@@ -14,7 +14,11 @@ def launch_lab():
         # Autenticar usuario
         driver, auth_success = authenticate_user()
         if not auth_success or not driver:
+            log("No se pudo autenticar. Deteniendo ejecución.", "error")
             return
+        
+        # Solo continuar si la autenticación fue exitosa
+        log("✅ Autenticación exitosa. Procediendo con el laboratorio...", "ok")
         
         # Procesar laboratorio
         lab_success = process_lab(driver)
@@ -22,7 +26,7 @@ def launch_lab():
         if lab_success:
             log("🎉 Laboratorio iniciado exitosamente", "done")
         else:
-            log("❌ No se pudo iniciar el laboratorio", "error")
+            log("Error: No se pudo iniciar el laboratorio", "error")
 
     except Exception as e:
         log(f"Error inesperado: {e}", "error")

@@ -78,6 +78,9 @@ def perform_login(driver: WebDriver, email: str, password: str) -> bool:
         driver.find_element(By.ID, "pseudonym_session_password").send_keys(password)
         driver.find_element(By.CLASS_NAME, "Button--login").click()
         
+        # Esperar un momento para que se procese el login
+        time.sleep(2)
+        
         # Verificar si el login fue exitoso
         try:
             # Esperar a que aparezca el dashboard o algún elemento que indique login exitoso
@@ -93,11 +96,75 @@ def perform_login(driver: WebDriver, email: str, password: str) -> bool:
                     return False
             except:
                 pass
-            log("No se pudo verificar el login. Continuando...", "info")
-            return True  # Asumir éxito si no hay error explícito
+            
+            # Verificar si hay error 400 o similar en la URL o contenido
+            current_url = driver.current_url
+            page_source = driver.page_source.lower()
+            
+            # Detectar errores comunes de autenticación
+            if ("error" in current_url or 
+                "400" in page_source or 
+                "unauthorized" in page_source or
+                "invalid" in page_source or
+                "incorrect" in page_source):
+                log("Error de autenticación detectado. Credenciales incorrectas.", "error")
+                return False
+            
+            # Si llegamos aquí, asumir que el login fue exitoso pero no se pudo verificar
+            log("No se pudo verificar el login completamente, pero continuando...", "info")
+            return True
 
     except Exception as e:
         log(f"Error durante el login: {e}", "error")
+        return False
+
+
+def detect_auth_error(driver: WebDriver) -> bool:
+    """
+    Detecta si hay errores de autenticación en la página actual.
+    
+    Args:
+        driver: WebDriver en la página actual
+        
+    Returns:
+        bool: True si hay error de autenticación, False en caso contrario
+    """
+    try:
+        current_url = driver.current_url.lower()
+        page_source = driver.page_source.lower()
+        
+        # Detectar errores específicos de autenticación
+        auth_errors = [
+            "error", "400", "401", "403", "unauthorized", "forbidden",
+            "invalid", "incorrect", "wrong", "failed", "denied",
+            "login failed", "authentication failed", "access denied"
+        ]
+        
+        # Verificar en URL y contenido de la página
+        for error in auth_errors:
+            if error in current_url or error in page_source:
+                return True
+        
+        # Verificar elementos específicos de error
+        try:
+            error_selectors = [
+                ".error_message", ".alert-error", ".error", 
+                ".login-error", ".auth-error", ".invalid-credentials"
+            ]
+            
+            for selector in error_selectors:
+                try:
+                    error_element = driver.find_element(By.CSS_SELECTOR, selector)
+                    if error_element.is_displayed():
+                        return True
+                except:
+                    continue
+        except:
+            pass
+        
+        return False
+        
+    except Exception:
         return False
 
 
@@ -119,5 +186,10 @@ def authenticate_user() -> tuple[WebDriver, bool]:
 
     driver = setup_driver()
     success = perform_login(driver, email, password)
+    
+    # Verificación adicional de errores de autenticación
+    if success and detect_auth_error(driver):
+        log("Error de autenticación detectado después del login", "error")
+        success = False
     
     return driver, success
