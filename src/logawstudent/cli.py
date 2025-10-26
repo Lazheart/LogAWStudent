@@ -1,7 +1,14 @@
 # src/logawstudent/cli.py
 import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from rich import box
 from .utils import set_env, unset_env, load_env, clear_env, update_env, get_credentials_status
 from .core import launch_lab
+
+console = Console()
 
 app = typer.Typer(
     help="CLI para automatizar login y labs de AWS Academy",
@@ -10,10 +17,14 @@ app = typer.Typer(
 )
 
 def show_credentials_status():
-    """Muestra el estado de las credenciales."""
+    """Muestra el estado de las credenciales con formato elegante."""
     status = get_credentials_status()
-    typer.echo("📊 Estado de las credenciales:")
-    typer.echo("=" * 40)
+    
+    # Crear tabla para mostrar el estado
+    table = Table(show_header=True, header_style="bold blue", box=box.ROUNDED)
+    table.add_column("Credencial", style="cyan", width=12)
+    table.add_column("Estado", justify="center", width=8)
+    table.add_column("Valor", style="dim", width=30)
     
     for key, info in status.items():
         if info['exists']:
@@ -23,17 +34,24 @@ def show_credentials_status():
                 display_value = "*" * len(value) if value else "No configurado"
             else:
                 display_value = value[:3] + "..." + value[-3:] if len(value) > 6 else value
-            typer.echo(f"✅ {key}: {display_value}")
+            table.add_row(key, "✅", display_value)
         else:
-            typer.echo(f"❌ {key}: No configurado")
+            table.add_row(key, "❌", "No configurado")
     
+    # Crear panel con la tabla
+    panel_content = table
+    console.print(Panel(panel_content, title="📊 Estado de las Credenciales", border_style="blue"))
+    
+    # Mostrar mensaje de estado
     all_configured = all(info['exists'] for info in status.values())
     if all_configured:
-        typer.echo("\n🚀 Todas las credenciales están configuradas. Puedes usar 'awstudent start'")
+        console.print(Panel("🚀 Todas las credenciales están configuradas. Puedes usar 'awstudent start'", 
+                           title="✅ Listo", border_style="green"))
     else:
         missing = [k for k, v in status.items() if not v['exists']]
-        typer.echo(f"\n⚠️  Faltan credenciales: {', '.join(missing)}")
-        typer.echo("Usa 'awstudent login' y 'awstudent url --set' para configurar")
+        console.print(Panel(f"⚠️  Faltan credenciales: {', '.join(missing)}\n"
+                           f"Usa 'awstudent login' y 'awstudent url --set' para configurar", 
+                           title="⚠️  Configuración Incompleta", border_style="yellow"))
 
 @app.command()
 def login(
@@ -51,15 +69,17 @@ def login(
             password = typer.prompt("Ingrese su nueva PASSWORD", hide_input=True)
             update_env("EMAIL", email)
             update_env("PASSWORD", password)
-            typer.echo("✅ Credenciales actualizadas exitosamente.")
+            console.print(Panel("✅ Credenciales actualizadas exitosamente.", 
+                               title="✅ Éxito", border_style="green"))
         except ValueError as e:
-            typer.echo(f"❌ {e}")
+            console.print(Panel(f"❌ {e}", title="❌ Error", border_style="red"))
     else:
         email = typer.prompt("Ingrese su EMAIL")
         password = typer.prompt("Ingrese su PASSWORD", hide_input=True)
         set_env("EMAIL", email)
         set_env("PASSWORD", password)
-        typer.echo("✅ Credenciales guardadas exitosamente.")
+        console.print(Panel("✅ Credenciales guardadas exitosamente.", 
+                           title="✅ Éxito", border_style="green"))
 
 @app.command()
 def url(
@@ -71,32 +91,38 @@ def url(
     if set:
         lab_url = typer.prompt("Ingrese la URL del LAB")
         set_env("LAB_URL", lab_url)
-        typer.echo("✅ URL del laboratorio guardada.")
+        console.print(Panel("✅ URL del laboratorio guardada.", 
+                           title="✅ Éxito", border_style="green"))
     elif update:
         try:
             lab_url = typer.prompt("Ingrese la nueva URL del LAB")
             update_env("LAB_URL", lab_url)
-            typer.echo("✅ URL del laboratorio actualizada.")
+            console.print(Panel("✅ URL del laboratorio actualizada.", 
+                               title="✅ Éxito", border_style="green"))
         except ValueError as e:
-            typer.echo(f"❌ {e}")
+            console.print(Panel(f"❌ {e}", title="❌ Error", border_style="red"))
     elif unset:
         unset_env("LAB_URL")
-        typer.echo("🧹 URL del laboratorio eliminada.")
+        console.print(Panel("🧹 URL del laboratorio eliminada.", 
+                           title="🧹 Eliminado", border_style="yellow"))
     else:
         data = load_env()
         current_url = data.get('LAB_URL')
         if current_url and current_url != 'No configurada':
             # Mostrar solo parte de la URL por seguridad
             display_url = current_url[:30] + "..." if len(current_url) > 30 else current_url
-            typer.echo(f"🔗 URL actual: {display_url}")
+            console.print(Panel(f"🔗 URL actual: {display_url}", 
+                               title="🔗 URL del Laboratorio", border_style="blue"))
         else:
-            typer.echo(f"🔗 URL actual: No configurada")
+            console.print(Panel("🔗 URL actual: No configurada", 
+                               title="🔗 URL del Laboratorio", border_style="blue"))
 
 @app.command()
 def logout():
     """Elimina todas las credenciales almacenadas."""
     clear_env()
-    typer.echo("👋 Credenciales eliminadas exitosamente.")
+    console.print(Panel("👋 Credenciales eliminadas exitosamente.", 
+                       title="👋 Logout", border_style="yellow"))
 
 @app.command()
 def start():
@@ -105,11 +131,12 @@ def start():
     try:
         from .utils import validate_credentials
         validate_credentials()
-        typer.echo("🚀 Iniciando laboratorio...")
+        console.print(Panel("🚀 Iniciando laboratorio...", 
+                           title="🚀 Iniciando", border_style="blue"))
         launch_lab()
     except ValueError as e:
-        typer.echo(f"❌ {e}")
-        typer.echo("💡 Usa 'awstudent login --status' para ver qué credenciales faltan")
+        console.print(Panel(f"❌ {e}\n💡 Usa 'awstudent login --status' para ver qué credenciales faltan", 
+                           title="❌ Error", border_style="red"))
 
 @app.command()
 def status():

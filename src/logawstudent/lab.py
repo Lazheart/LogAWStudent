@@ -4,13 +4,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.webdriver import WebDriver
+from rich.console import Console
+from rich.panel import Panel
 from .utils import validate_credentials
 
+console = Console()
 
 def log(msg, status="info"):
-    """Función de logging con iconos."""
+    """Función de logging con iconos y formato Rich."""
     icons = {"ok": "✅", "info": "🔎", "wait": "⏳", "error": "❌", "done": "🚀"}
-    print(f"{icons.get(status,'ℹ️')} {msg}")
+    colors = {"ok": "green", "info": "blue", "wait": "yellow", "error": "red", "done": "green"}
+    
+    icon = icons.get(status, "ℹ️")
+    color = colors.get(status, "white")
+    
+    console.print(f"[{color}]{icon} {msg}[/{color}]")
 
 
 def check_lab_status(driver: WebDriver, timeout=20):
