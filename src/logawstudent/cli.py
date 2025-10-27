@@ -12,9 +12,15 @@ console = Console()
 
 app = typer.Typer(
     help="CLI para automatizar login y labs de AWS Academy",
-    no_args_is_help=True,
+    no_args_is_help=False,
     add_completion=False
 )
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """LogAWStudent - CLI para automatizar login y labs de AWS Academy"""
+    if ctx.invoked_subcommand is None:
+        show_main_info()
 
 def show_credentials_status():
     """Muestra el estado de las credenciales con formato elegante."""
@@ -58,6 +64,52 @@ def show_credentials_status():
         console.print(Panel(f"⚠️  Faltan credenciales: {', '.join(missing)}\n"
                            f"Usa 'awstudent login' y 'awstudent url --set' para configurar", 
                            title="⚠️  Configuración Incompleta", border_style="yellow"))
+
+def show_main_info():
+    """Muestra información principal del proyecto cuando se ejecuta solo 'awstudent'."""
+    # Información del proyecto
+    console.print(Panel(
+        "🚀 CLI para automatizar login y labs de AWS Academy\n\n"
+        "Este proyecto automatiza el inicio de sesión en AWS Academy y el lanzamiento\n"
+        "de un laboratorio a través de Selenium y Python. Es útil para estudiantes de\n"
+        "AWS Academy que necesitan realizar este proceso repetidamente.\n\n"
+        "📦 Características:\n"
+        "• Login automático en AWS Academy\n"
+        "• Lanzamiento automático de laboratorios\n"
+        "• Gestión de credenciales segura\n"
+        "• Interfaz CLI intuitiva\n"
+        "• Modo headless para mayor eficiencia",
+        title="🎯 LogAWStudent",
+        border_style="blue"
+    ))
+    
+    # Información del autor
+    console.print(Panel(
+        "👨‍💻 Autor: Lazheart\n"
+        "🔗 Repositorio: https://github.com/Lazheart/LogAWStudent\n"
+        "⭐ Estrellas: 4\n"
+        "🍴 Forks: 0\n"
+        "📝 Licencia: Open Source",
+        title="👤 Información del Proyecto",
+        border_style="green"
+    ))
+    
+    # Comandos disponibles
+    console.print(Panel(
+        "📋 Comandos disponibles:\n\n"
+        "• awstudent login     - Gestiona credenciales de login\n"
+        "• awstudent url       - Configura URL del laboratorio\n"
+        "• awstudent start     - Inicia el laboratorio automáticamente\n"
+        "• awstudent status    - Muestra estado de credenciales\n"
+        "• awstudent clean     - Limpia credenciales específicas\n"
+        "• awstudent logout    - [DEPRECATED] Usa 'clean --all'\n\n"
+        "💡 Usa 'awstudent <comando> --help' para más información",
+        title="📚 Comandos Disponibles",
+        border_style="yellow"
+    ))
+    
+    # Estado actual
+    show_credentials_status()
 
 @app.command()
 def login(
@@ -111,7 +163,7 @@ def login(
 @app.command()
 def url(
     set: bool = typer.Option(False, "--set", help="Establece la URL del laboratorio"),
-    unset: bool = typer.Option(False, "--unset", help="Elimina la URL del laboratorio"),
+    unset: bool = typer.Option(False, "--unset", help="[DEPRECATED] Usa --delete en su lugar"),
     update: bool = typer.Option(False, "--update", help="Actualiza la URL del laboratorio"),
     delete: bool = typer.Option(False, "--delete", help="Elimina la URL del laboratorio")
 ):
@@ -130,6 +182,9 @@ def url(
         except ValueError as e:
             console.print(Panel(f"❌ {e}", title="❌ Error", border_style="red"))
     elif unset or delete:
+        if unset:
+            console.print(Panel("⚠️  --unset está deprecado. Usa --delete en su lugar.", 
+                               title="⚠️  Deprecado", border_style="yellow"))
         unset_env("LAB_URL")
         console.print(Panel("🧹 URL del laboratorio eliminada.", 
                            title="🧹 Eliminado", border_style="yellow"))
@@ -150,7 +205,10 @@ def logout(
     force: bool = typer.Option(False, "--force", help="Fuerza el logout sin confirmar"),
     status: bool = typer.Option(False, "--status", help="Muestra el estado antes de hacer logout")
 ):
-    """Elimina todas las credenciales almacenadas."""
+    """[DEPRECATED] Usa 'clean --all' en su lugar. Elimina todas las credenciales almacenadas."""
+    console.print(Panel("⚠️  El comando 'logout' está deprecado. Usa 'clean --all' en su lugar.", 
+                       title="⚠️  Deprecado", border_style="yellow"))
+    
     if status:
         show_credentials_status()
         return
