@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logawstudent"
-version = "1.0.0"
+version = "1.0.1"
 description = "Automatiza el login y lanzamiento de laboratorios de AWS Academy."
 authors = [
   { name = "Lazheart", email = "lazheart29@gmail.com" }
