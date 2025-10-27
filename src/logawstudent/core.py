@@ -18,13 +18,13 @@ def launch_lab():
             return
         
         # Solo continuar si la autenticación fue exitosa
-        log("✅ Autenticación exitosa. Procediendo con el laboratorio...", "ok")
+        log(" Autenticación exitosa. Procediendo con el laboratorio...", "ok")
         
         # Procesar laboratorio
         lab_success = process_lab(driver)
         
         if lab_success:
-            log("🎉 Laboratorio iniciado exitosamente", "done")
+            log("Laboratorio iniciado exitosamente", "done")
         else:
             log("Error: No se pudo iniciar el laboratorio", "error")
 

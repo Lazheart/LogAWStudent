@@ -39,7 +39,7 @@ def block_heavy_resources(driver: WebDriver):
 def setup_driver():
     """Configura y retorna un driver de Chrome optimizado."""
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -68,7 +68,7 @@ def perform_login(driver: WebDriver, email: str, password: str) -> bool:
         bool: True si el login fue exitoso, False en caso contrario
     """
     try:
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 5)
         
         log("Abriendo página de login...", "wait")
         driver.get("https://awsacademy.instructure.com/login/canvas")
@@ -78,39 +78,50 @@ def perform_login(driver: WebDriver, email: str, password: str) -> bool:
         driver.find_element(By.ID, "pseudonym_session_password").send_keys(password)
         driver.find_element(By.CLASS_NAME, "Button--login").click()
         
-        
         # Verificar si el login fue exitoso
+        log("Verificando resultado del login...", "wait")
+        
+        # Esperar un momento para que la página se redirija
+        time.sleep(3)
+        
+        # Verificar la URL actual para detectar login exitoso
+        current_url = driver.current_url
+        log(f"URL actual después del login: {current_url}", "info")
+        
+        # Verificar si la URL contiene login_success=1 (indicador de login exitoso)
+        if "login_success=1" in current_url:
+            log("Login exitoso detectado por URL", "ok")
+            return True
+        
+        # Verificar si estamos en la página principal de AWS Academy
+        if "awsacademy.instructure.com" in current_url and "login" not in current_url:
+            log("Login exitoso - redirigido a página principal", "ok")
+            return True
+            
+        # Verificar si hay mensaje de error
         try:
-            # Esperar a que aparezca el dashboard o algún elemento que indique login exitoso
-            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ic-Layout-wrapper")))
-            log("Login exitoso", "ok")
-            return True
-        except:
-            # Si no aparece el dashboard, verificar si hay mensaje de error
-            try:
-                error_element = driver.find_element(By.CLASS_NAME, "error_message")
-                if error_element.is_displayed():
-                    log("Credenciales incorrectas. Verifica tu email y contraseña.", "error")
-                    return False
-            except:
-                pass
-            
-            # Verificar si hay error 400 o similar en la URL o contenido
-            current_url = driver.current_url
-            page_source = driver.page_source.lower()
-            
-            # Detectar errores comunes de autenticación
-            if ("error" in current_url or 
-                "400" in page_source or 
-                "unauthorized" in page_source or
-                "invalid" in page_source or
-                "incorrect" in page_source):
-                log("Error de autenticación detectado. Credenciales incorrectas.", "error")
+            error_element = driver.find_element(By.CLASS_NAME, "error_message")
+            if error_element.is_displayed():
+                log("Credenciales incorrectas. Verifica tu email y contraseña.", "error")
                 return False
-            
-            # Si llegamos aquí, asumir que el login fue exitoso pero no se pudo verificar
-            log("No se pudo verificar el login completamente, pero continuando...", "info")
-            return True
+        except:
+            pass
+        
+        # Verificar si hay error 400 o similar en la URL o contenido
+        page_source = driver.page_source.lower()
+        
+        # Detectar errores comunes de autenticación
+        if ("error" in current_url or 
+            "400" in page_source or 
+            "unauthorized" in page_source or
+            "invalid" in page_source or
+            "incorrect" in page_source):
+            log("Error de autenticación detectado. Credenciales incorrectas.", "error")
+            return False
+        
+        # Si llegamos aquí, asumir que el login fue exitoso pero no se pudo verificar
+        log("No se pudo verificar el login completamente, pero continuando...", "info")
+        return True
 
     except Exception as e:
         log(f"Error durante el login: {e}", "error")
@@ -129,32 +140,48 @@ def detect_auth_error(driver: WebDriver) -> bool:
     """
     try:
         current_url = driver.current_url.lower()
-        page_source = driver.page_source.lower()
         
-        # Detectar errores específicos de autenticación
-        auth_errors = [
+        # Si la URL contiene login_success=1, no hay error de autenticación
+        if "login_success=1" in current_url:
+            return False
+            
+        # Si estamos en la página principal de AWS Academy (sin login), no hay error
+        if "awsacademy.instructure.com" in current_url and "login" not in current_url:
+            return False
+        
+        # Detectar errores específicos de autenticación en la URL
+        url_auth_errors = [
             "error", "400", "401", "403", "unauthorized", "forbidden",
-            "invalid", "incorrect", "wrong", "failed", "denied",
-            "login failed", "authentication failed", "access denied"
+            "login_failed", "authentication_failed", "access_denied"
         ]
         
-        # Verificar en URL y contenido de la página
-        for error in auth_errors:
-            if error in current_url or error in page_source:
+        # Verificar solo en la URL para errores específicos
+        for error in url_auth_errors:
+            if error in current_url:
                 return True
         
-        # Verificar elementos específicos de error
+        # Verificar elementos específicos de error de autenticación
         try:
             error_selectors = [
-                ".error_message", ".alert-error", ".error", 
-                ".login-error", ".auth-error", ".invalid-credentials"
+                ".error_message", ".alert-error", 
+                ".login-error", ".auth-error", ".invalid-credentials",
+                "[class*='error']", "[class*='invalid']"
             ]
             
             for selector in error_selectors:
                 try:
                     error_element = driver.find_element(By.CSS_SELECTOR, selector)
-                    if error_element.is_displayed():
-                        return True
+                    if error_element.is_displayed() and error_element.text.strip():
+                        # Verificar que el texto del error sea relevante para autenticación
+                        error_text = error_element.text.lower()
+                        auth_error_indicators = [
+                            "invalid", "incorrect", "wrong", "failed", "denied",
+                            "login failed", "authentication failed", "access denied",
+                            "credentials", "password", "username"
+                        ]
+                        
+                        if any(indicator in error_text for indicator in auth_error_indicators):
+                            return True
                 except:
                     continue
         except:

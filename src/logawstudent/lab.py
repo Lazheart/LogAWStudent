@@ -21,7 +21,7 @@ def log(msg, status="info"):
     console.print(f"[{color}]{icon} {msg}[/{color}]")
 
 
-def check_lab_status(driver: WebDriver, timeout=10):
+def check_lab_status(driver: WebDriver, timeout=5):
     """Consulta el estado del laboratorio leyendo #vmstatus dentro de #vmBtn si existe."""
     start = time.time()
 
@@ -69,7 +69,7 @@ def check_lab_status(driver: WebDriver, timeout=10):
     return None
 
 
-def click_start_lab_fast(driver: WebDriver, timeout=10):
+def click_start_lab_fast(driver: WebDriver, timeout=5):
     """Hace clic rápido en el botón Start Lab si está disponible."""
     start = time.time()
     while time.time() - start < timeout:
@@ -112,7 +112,7 @@ def navigate_to_lab(driver: WebDriver) -> bool:
     try:
         log("Entrando al laboratorio...", "wait")
         driver.get(lab_url)
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 5)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
         log("Página del lab cargada", "ok")
         return True
@@ -138,7 +138,7 @@ def wait_for_lab_ready(driver: WebDriver, max_wait=50):
         if status and "Ready" in status:
             log("Laboratorio ya está iniciado y listo", "ok")
             return True
-        log("⏳ Esperando que el laboratorio se inicie...", "wait")
+        log(" Esperando que el laboratorio se inicie...", "wait")
         time.sleep(2)
     
     log("El laboratorio no se inició en el tiempo esperado", "error")
@@ -184,7 +184,7 @@ def start_terminated_lab(driver: WebDriver):
     log("Laboratorio detenido, intentando iniciarlo...", "wait")
     
     if click_start_lab_fast(driver, timeout=15):
-        log("🚀 Botón Start Lab clickeado", "ok")
+        log("Botón Start Lab clickeado", "ok")
         return wait_for_lab_ready(driver, max_wait=200)
     else:
         log("No se pudo iniciar el laboratorio", "error")
@@ -202,7 +202,7 @@ def manage_lab_status(driver: WebDriver):
         bool: True si el lab está listo, False en caso contrario
     """
     log("Verificando estado del laboratorio...", "wait")
-    status = check_lab_status(driver, timeout=15)
+    status = check_lab_status(driver, timeout=8)
 
     if not status:
         log("No se pudo detectar el estado del laboratorio", "error")
