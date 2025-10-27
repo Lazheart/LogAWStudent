@@ -1,11 +1,17 @@
 # Ignorar el archivo .env que contiene las credenciales sensibles
 .env
 
-# Otros archivos y directorios que puedes querer ignorar
+# Archivos y directorios de Python
 __pycache__/
 *.pyc
 *.pyo
-*.vscode
+*.pyd
+
+# Metadata de paquetes Python
+*.egg-info/
+*.egg
+dist/
+build/
 
 # Ignorar entornos virtuales
 venv/
@@ -17,4 +23,3 @@ env/
 # Archivos de sistema
 .DS_Store
 Thumbs.db
-
