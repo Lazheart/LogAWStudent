@@ -101,8 +101,7 @@ def show_main_info():
         "• awstudent url       - Configura URL del laboratorio\n"
         "• awstudent start     - Inicia el laboratorio automáticamente\n"
         "• awstudent status    - Muestra estado de credenciales\n"
-        "• awstudent clean     - Limpia credenciales específicas\n"
-        "• awstudent logout    - [DEPRECATED] Usa 'clean --all'\n\n"
+        "• awstudent clean     - Limpia credenciales específicas\n\n"
         "💡 Usa 'awstudent <comando> --help' para más información",
         title="📚 Comandos Disponibles",
         border_style="yellow"
@@ -200,28 +199,6 @@ def url(
             console.print(Panel("🔗 URL actual: No configurada", 
                                title="🔗 URL del Laboratorio", border_style="blue"))
 
-@app.command()
-def logout(
-    force: bool = typer.Option(False, "--force", help="Fuerza el logout sin confirmar"),
-    status: bool = typer.Option(False, "--status", help="Muestra el estado antes de hacer logout")
-):
-    """[DEPRECATED] Usa 'clean --all' en su lugar. Elimina todas las credenciales almacenadas."""
-    console.print(Panel("⚠️  El comando 'logout' está deprecado. Usa 'clean --all' en su lugar.", 
-                       title="⚠️  Deprecado", border_style="yellow"))
-    
-    if status:
-        show_credentials_status()
-        return
-    
-    if not force:
-        confirm = typer.confirm("¿Estás seguro de que quieres eliminar TODAS las credenciales?")
-        if not confirm:
-            console.print("Operación cancelada.", style="yellow")
-            return
-    
-    clear_env()
-    console.print(Panel("👋 Credenciales eliminadas exitosamente.", 
-                       title="👋 Logout", border_style="yellow"))
 
 @app.command()
 def start(
