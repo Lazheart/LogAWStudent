@@ -102,6 +102,11 @@ def show_main_info():
         "• awstudent start     - Inicia el laboratorio automáticamente\n"
         "• awstudent status    - Muestra estado de credenciales\n"
         "• awstudent clean     - Limpia credenciales específicas\n\n"
+        "🧹 Opciones de limpieza:\n"
+        "• awstudent login --clean email    - Elimina solo el email\n"
+        "• awstudent login --clean password - Elimina solo la contraseña\n"
+        "• awstudent login --clean all      - Elimina email y contraseña\n"
+        "• awstudent url --clean            - Elimina la URL del laboratorio\n\n"
         "💡 Usa 'awstudent <comando> --help' para más información",
         title="📚 Comandos Disponibles",
         border_style="yellow"
@@ -115,11 +120,31 @@ def login(
     status: bool = typer.Option(False, "--status", help="Muestra el estado de las credenciales"),
     update: bool = typer.Option(False, "--update", help="Actualiza credenciales existentes"),
     force: bool = typer.Option(False, "--force", help="Fuerza la sobrescritura sin preguntar"),
-    delete: bool = typer.Option(False, "--delete", help="Elimina las credenciales de login")
+    delete: bool = typer.Option(False, "--delete", help="Elimina las credenciales de login"),
+    clean: str = typer.Option(None, "--clean", help="Limpia credenciales específicas: 'email', 'password', o 'all'")
 ):
     """Guarda o actualiza credenciales (email y password) en .env"""
     if status:
         show_credentials_status()
+        return
+    
+    if clean:
+        if clean == "email":
+            unset_env("EMAIL")
+            console.print(Panel("🧹 Email eliminado.", 
+                               title="🧹 Limpieza", border_style="yellow"))
+        elif clean == "password":
+            unset_env("PASSWORD")
+            console.print(Panel("🧹 Password eliminada.", 
+                               title="🧹 Limpieza", border_style="yellow"))
+        elif clean == "all":
+            unset_env("EMAIL")
+            unset_env("PASSWORD")
+            console.print(Panel("🧹 Todas las credenciales de login eliminadas.", 
+                               title="🧹 Limpieza Completa", border_style="yellow"))
+        else:
+            console.print(Panel("❌ Opción inválida para --clean. Usa: 'email', 'password', o 'all'", 
+                               title="❌ Error", border_style="red"))
         return
     
     if delete:
@@ -164,9 +189,16 @@ def url(
     set: bool = typer.Option(False, "--set", help="Establece la URL del laboratorio"),
     unset: bool = typer.Option(False, "--unset", help="[DEPRECATED] Usa --delete en su lugar"),
     update: bool = typer.Option(False, "--update", help="Actualiza la URL del laboratorio"),
-    delete: bool = typer.Option(False, "--delete", help="Elimina la URL del laboratorio")
+    delete: bool = typer.Option(False, "--delete", help="Elimina la URL del laboratorio"),
+    clean: bool = typer.Option(False, "--clean", help="Limpia la URL del laboratorio")
 ):
     """Configura, actualiza o elimina la URL del laboratorio."""
+    if clean:
+        unset_env("LAB_URL")
+        console.print(Panel("🧹 URL del laboratorio eliminada.", 
+                           title="🧹 Limpieza", border_style="yellow"))
+        return
+    
     if set:
         lab_url = typer.prompt("Ingrese la URL del LAB")
         set_env("LAB_URL", lab_url)
