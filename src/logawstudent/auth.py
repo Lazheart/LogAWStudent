@@ -39,7 +39,7 @@ def block_heavy_resources(driver: WebDriver):
 def setup_driver():
     """Configura y retorna un driver de Chrome optimizado."""
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -78,13 +78,11 @@ def perform_login(driver: WebDriver, email: str, password: str) -> bool:
         driver.find_element(By.ID, "pseudonym_session_password").send_keys(password)
         driver.find_element(By.CLASS_NAME, "Button--login").click()
         
-        # Esperar un momento para que se procese el login
-        time.sleep(2)
         
         # Verificar si el login fue exitoso
         try:
             # Esperar a que aparezca el dashboard o algún elemento que indique login exitoso
-            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ic-DashboardCard")))
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "ic-Layout-wrapper")))
             log("Login exitoso", "ok")
             return True
         except:
