@@ -32,6 +32,12 @@ def show_credentials_status():
             value = info['value']
             if key == "PASSWORD":
                 display_value = "*" * len(value) if value else "No configurado"
+            elif key == "LAB_URL":
+                # Para URLs, mostrar más caracteres para que sea útil
+                if len(value) > 20:
+                    display_value = value[:10] + "..." + value[-10:]
+                else:
+                    display_value = value
             else:
                 display_value = value[:3] + "..." + value[-3:] if len(value) > 6 else value
             table.add_row(key, "✅", display_value)
@@ -56,7 +62,8 @@ def show_credentials_status():
 @app.command()
 def login(
     status: bool = typer.Option(False, "--status", help="Muestra el estado de las credenciales"),
-    update: bool = typer.Option(False, "--update", help="Actualiza credenciales existentes")
+    update: bool = typer.Option(False, "--update", help="Actualiza credenciales existentes"),
+    force: bool = typer.Option(False, "--force", help="Fuerza la sobrescritura sin preguntar")
 ):
     """Guarda o actualiza credenciales (email y password) en .env"""
     if status:
@@ -74,6 +81,18 @@ def login(
         except ValueError as e:
             console.print(Panel(f"❌ {e}", title="❌ Error", border_style="red"))
     else:
+        # Verificar si ya existen credenciales
+        existing_creds = load_env()
+        has_existing = any(existing_creds.get(key) for key in ["EMAIL", "PASSWORD"])
+        
+        if has_existing and not force:
+            console.print(Panel("⚠️  Ya existen credenciales guardadas.", 
+                               title="⚠️  Credenciales Existentes", border_style="yellow"))
+            overwrite = typer.confirm("¿Deseas sobrescribir las credenciales existentes?")
+            if not overwrite:
+                console.print("Operación cancelada.", style="yellow")
+                return
+        
         email = typer.prompt("Ingrese su EMAIL")
         password = typer.prompt("Ingrese su PASSWORD", hide_input=True)
         set_env("EMAIL", email)

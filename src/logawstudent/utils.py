@@ -21,11 +21,21 @@ def ensure_global_config_dir():
 def load_env():
     """Carga las variables de entorno desde el archivo .env apropiado."""
     env_file = get_env_file()
-    load_dotenv(env_file)
+    
+    # Leer directamente del archivo para evitar problemas de caché
+    env_data = {}
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_data[key.strip()] = value.strip()
+    
     return {
-        "EMAIL": os.getenv("EMAIL"),
-        "PASSWORD": os.getenv("PASSWORD"),
-        "LAB_URL": os.getenv("LAB_URL"),
+        "EMAIL": env_data.get("EMAIL"),
+        "PASSWORD": env_data.get("PASSWORD"),
+        "LAB_URL": env_data.get("LAB_URL"),
     }
 
 def set_env(key, value):
