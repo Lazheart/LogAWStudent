@@ -21,7 +21,7 @@ def log(msg, status="info"):
     console.print(f"[{color}]{icon} {msg}[/{color}]")
 
 
-def check_lab_status(driver: WebDriver, timeout=20):
+def check_lab_status(driver: WebDriver, timeout=10):
     """Consulta el estado del laboratorio leyendo #vmstatus dentro de #vmBtn si existe."""
     start = time.time()
 
@@ -69,7 +69,7 @@ def check_lab_status(driver: WebDriver, timeout=20):
     return None
 
 
-def click_start_lab_fast(driver: WebDriver, timeout=15):
+def click_start_lab_fast(driver: WebDriver, timeout=10):
     """Hace clic rápido en el botón Start Lab si está disponible."""
     start = time.time()
     while time.time() - start < timeout:
@@ -121,7 +121,7 @@ def navigate_to_lab(driver: WebDriver) -> bool:
         return False
 
 
-def wait_for_lab_ready(driver: WebDriver, max_wait=200):
+def wait_for_lab_ready(driver: WebDriver, max_wait=50):
     """
     Espera a que el laboratorio esté listo.
     
